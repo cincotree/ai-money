@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import TransactionsPage from "@/components/TransactionList";
+
+import ExpenseCalendar from "@/components/CalendarView"
 import { getBaseHttpUrl } from "@/utils/api";
 
 export function TransactionFlowClient() {
@@ -252,7 +253,7 @@ export function TransactionFlowClient() {
               </DialogFooter>
             </DialogContent>
           </Modal>
-          <TransactionsPage categories={categories} transactions={transactions || []} />
+          <ExpenseCalendar categories={categories} expenses={transactions || []} />
         </div>
       )}
     </div>
