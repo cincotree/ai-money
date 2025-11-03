@@ -9,7 +9,19 @@ Chart.register(CategoryScale, LinearScale, BarElement, ChartDataLabels);
 
 import { Transaction } from "@/hooks/useAgentworkflow";
 
-export default function TransactionsPage({ transactions, categories }: { transactions: Transaction[], categories: string[] }) {
+// Currency symbol mapping
+const CURRENCY_SYMBOLS: { [key: string]: string } = {
+    "USD": "$",
+    "AED": "AED",
+    "EUR": "€",
+    "GBP": "£",
+    "INR": "₹",
+    "JPY": "¥",
+    "CNY": "¥",
+};
+
+export default function TransactionsPage({ transactions, categories, currency = "USD" }: { transactions: Transaction[], categories: string[], currency?: string }) {
+    const currencySymbol = CURRENCY_SYMBOLS[currency] || currency;
 
     const columns = [
         {
@@ -43,6 +55,16 @@ export default function TransactionsPage({ transactions, categories }: { transac
             dataIndex: "display_amount",
             key: "display_amount",
             width: 300,
+            render: (text: string, record: Transaction) => {
+                // Extract the numeric value from display_amount (remove $ or other symbols)
+                const numericValue = text.replace(/[^0-9.-]/g, '');
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <span style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>{currencySymbol}</span>
+                        <span style={{ fontWeight: 500 }}>{numericValue}</span>
+                    </div>
+                );
+            },
         },
     ];
 
@@ -52,11 +74,33 @@ export default function TransactionsPage({ transactions, categories }: { transac
             totals[category] = 0;
         });
 
+        let unmatchedTotal = 0;
+        let matchedTotal = 0;
+
         transactions.forEach(transaction => {
-            if (totals.hasOwnProperty(transaction.to_account)) {
-                totals[transaction.to_account] += parseFloat(transaction.amount);
+            const amount = parseFloat(transaction.amount);
+            if (!isNaN(amount)) {
+                const absAmount = Math.abs(amount);
+                if (totals.hasOwnProperty(transaction.to_account)) {
+                    totals[transaction.to_account] += absAmount;
+                    matchedTotal += absAmount;
+                } else {
+                    unmatchedTotal += absAmount;
+                    console.log('Unmatched transaction:', {
+                        to_account: transaction.to_account,
+                        amount: absAmount,
+                        date: transaction.date,
+                        payee: transaction.payee
+                    });
+                }
             }
         });
+
+        console.log('Category Totals:', totals);
+        console.log('Categories:', categories);
+        console.log('Matched total:', matchedTotal);
+        console.log('Unmatched total:', unmatchedTotal);
+        console.log('Sample transactions:', transactions.slice(0, 5));
 
         return totals;
     };
@@ -79,9 +123,22 @@ export default function TransactionsPage({ transactions, categories }: { transac
             datalabels: {
                 anchor: "end" as const,
                 align: "end" as const,
-                formatter: (value: number) => `$${value.toFixed(2)}`,
-                font: {
-                    size: 11,
+                formatter: (value: number) => {
+                    // Small currency on top, larger amount below
+                    return [currencySymbol, value.toFixed(2)];
+                },
+                font: (context: any) => {
+                    // Make the first line (currency) smaller
+                    const line = context.dataset.datalabels?.[context.dataIndex] || 0;
+                    return {
+                        size: 8, // Smaller size for currency
+                        weight: 'normal' as const
+                    };
+                },
+                textAlign: 'center' as const,
+                color: (context: any) => {
+                    // Make currency slightly gray
+                    return '#666';
                 },
             },
         },
@@ -91,12 +148,21 @@ export default function TransactionsPage({ transactions, categories }: { transac
                 grace: '7%',
                 ticks: {
                     callback: function (tickValue: number | string) {
-                        return `$${tickValue}`;
+                        return `${currencySymbol} ${tickValue}`;
                     },
                 },
             },
         },
     };
+
+    // Calculate total expenses amount (only transactions with to_account starting with "Expenses:")
+    const totalExpensesAmount = transactions.reduce((sum, txn) => {
+        if (txn.to_account && txn.to_account.startsWith('Expenses:')) {
+            const amount = parseFloat(txn.amount || '0');
+            return sum + (isNaN(amount) ? 0 : Math.abs(amount));
+        }
+        return sum;
+    }, 0);
 
     return (
         <div className="p-4">
@@ -113,7 +179,15 @@ export default function TransactionsPage({ transactions, categories }: { transac
                     />
                 </div>
                 <div className="w-5/12 p-4">
-                    <h2 className="text-xl font-bold mb-4 p-3">Expenses by Category</h2>
+                    <div className="flex justify-between items-center mb-4 p-3">
+                        <h2 className="text-xl font-bold">Expenses by Category</h2>
+                        <div className="text-right">
+                            <div className="text-xs text-gray-500 uppercase tracking-wide">Total Expenses</div>
+                            <div className="text-2xl font-bold text-blue-600">
+                                {currencySymbol} {totalExpensesAmount.toFixed(2)}
+                            </div>
+                        </div>
+                    </div>
                     <Bar data={chart_data} options={chart_options} className="pt-5" />
                 </div>
             </div>

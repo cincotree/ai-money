@@ -20,8 +20,10 @@ export function TransactionFlowClient() {
   const [isMounted, setIsMounted] = useState(false);
   const [uploadErrorMessage, setuploadErrorMessage] = useState<string | null>(null);
   const [beancountFilepath, setBeancountFilepath] = useState<string | null>(null);
+  const [currency, setCurrency] = useState<string>("USD");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
 
   const {
@@ -47,6 +49,9 @@ export function TransactionFlowClient() {
     const formData = new FormData();
     formData.append("file", file);
 
+    setIsUploading(true);
+    setuploadErrorMessage(null);
+
     try {
       const baseUrl = await getBaseHttpUrl();
       const response = await fetch(`${baseUrl}/api/upload`, {
@@ -62,9 +67,12 @@ export function TransactionFlowClient() {
       setBeancountFilepath(data.beancount_filepath);
       setCategories(data.categories);
       setTransactions(data.transactions);
+      setCurrency(data.currency || "USD");
     } catch (error) {
       console.error("Error uploading file:", error);
       setuploadErrorMessage("Error uploading file");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -90,9 +98,17 @@ export function TransactionFlowClient() {
         type="file"
         ref={fileInputRef}
         onChange={handleFileUpload}
+        accept=".csv,.pdf"
         className="hidden"
       />
-      {fileInputRef.current?.files?.[0] ? (
+      {isUploading ? (
+        <div className="place-items-center py-10">
+          <div className="flex flex-col items-center gap-3">
+            <LoadingIcon width={40} height={40} className="text-blue-500" />
+            <p className="text-blue-600 font-semibold">Uploading and processing file...</p>
+          </div>
+        </div>
+      ) : fileInputRef.current?.files?.[0] ? (
         <div className="mb-4 text-xs">
           <p className="text-sky-600 pb-5 pr-5 float-left">
             Uploaded File: <span className="font-mono">{fileInputRef.current.files[0].name}</span>
@@ -118,7 +134,7 @@ export function TransactionFlowClient() {
               onClick={() => fileInputRef.current?.click()}
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
             >
-              Upload Statement
+              Upload Statement (CSV or PDF)
             </button>
           </div>
         </div>
@@ -252,7 +268,7 @@ export function TransactionFlowClient() {
               </DialogFooter>
             </DialogContent>
           </Modal>
-          <TransactionsPage categories={categories} transactions={transactions || []} />
+          <TransactionsPage categories={categories} transactions={transactions || []} currency={currency} />
         </div>
       )}
     </div>

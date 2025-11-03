@@ -1,10 +1,13 @@
 ## AI Money
 
 This is a personal finance expense tracker. This works on top of transactions in [beancount](https://beancount.github.io/) file format.
-The app converts an uploaded csv of credit card statement into a beacnount file and categorizes the expenses with an AI agent.
+The app converts uploaded credit card statements (CSV or PDF) into a beancount file and categorizes the expenses with an AI agent.
 
 ### Features
-- Categorize transactions using AI
+- **Upload PDF or CSV statements** - Supports any credit card statement format
+- **AI-powered PDF parsing** - Automatically extracts transactions from PDF statements using Claude AI
+- **Smart categorization** - Categorize transactions using AI
+- **Multi-currency support** - Handles transactions in different currencies
 
 ![AI money categorize demo](ai-money-categorize.png)
 
@@ -98,9 +101,16 @@ docker push 867344451303.dkr.ecr.us-west-2.amazonaws.com/ai-money/frontend:`git 
 
 
 
-**Sample CC statement**
+**Supported Statement Formats**
 
-A sample statement is available in backend/statements. Currently, the application supports only this statement format. To use this application, ensure your statements are converted to this CSV format.
+The application now supports **both CSV and PDF** credit card statements:
+
+- **CSV**: Sample CSV statement available in `backend/statements/sample-statement.csv`
+- **PDF**:
+  - The AI automatically extracts transactions from any credit card PDF statement format
+  - No manual conversion needed!
+
+Simply upload your credit card statement (CSV or PDF) through the web interface, and the app will automatically process it.
 
 
 ### Dashboard

@@ -7,6 +7,7 @@ from accounting.catagory import CATEGORIES
 from accounting.cc import convert_fidelity_cc_to_beancount
 from accounting.accounts import account_directives
 from accounting.transactions import build_transaction_dicts
+from accounting.pdf_parser import parse_pdf_statement_with_ai, convert_ai_transactions_to_csv_format
 from datetime import datetime
 import pandas as pd
 from fastapi import UploadFile
@@ -24,25 +25,54 @@ class Transaction(BaseModel):
     to_account: str  # Debit account
     links: List[str]
 
-@router.post("/api/upload")
+@router.post("/upload")
 async def upload_file(file: UploadFile):
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         os.makedirs("/tmp", exist_ok=True)
-        filename = f"/tmp/upload_{timestamp}.csv"
+
+        # Determine file type from extension
+        file_extension = os.path.splitext(file.filename)[1].lower()
+
+        # Save the uploaded file
+        if file_extension == '.pdf':
+            filename = f"/tmp/upload_{timestamp}.pdf"
+        else:
+            filename = f"/tmp/upload_{timestamp}.csv"
 
         content = await file.read()
         with open(filename, "wb") as f:
             f.write(content)
 
-        sample_txns = pd.read_csv(filename)
+        # Process based on file type
+        currency = "USD"  # Default currency
+        if file_extension == '.pdf':
+            # Parse PDF using AI
+            ai_transactions, currency = parse_pdf_statement_with_ai(filename)
+            csv_format_txns = convert_ai_transactions_to_csv_format(ai_transactions)
+            sample_txns = pd.DataFrame(csv_format_txns)
+        else:
+            # Read CSV directly
+            sample_txns = pd.read_csv(filename)
+            # For CSV, default to USD (could be enhanced to detect from CSV content)
+
+        # Convert to beancount format
         beancount_txns = convert_fidelity_cc_to_beancount(sample_txns)
         all_entries = account_directives + beancount_txns
         beancount_filepath = f"/tmp/transactions_{timestamp}.beancount"
         store.persist(all_entries, beancount_filepath)
         transactions = load(beancount_filepath)
-        return {"beancount_filepath": beancount_filepath, 'categories': CATEGORIES, 'transactions': build_transaction_dicts(transactions), "message": f"File uploaded successfully as {filename}"}
+
+        return {
+            "beancount_filepath": beancount_filepath,
+            'categories': CATEGORIES,
+            'transactions': build_transaction_dicts(transactions),
+            "message": f"File uploaded successfully as {filename}",
+            "file_type": "PDF" if file_extension == '.pdf' else "CSV",
+            "currency": currency
+        }
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/health")
