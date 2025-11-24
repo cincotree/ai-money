@@ -4,14 +4,14 @@ FROM python:3.10-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the pyproject.toml and poetry.lock files to the container
-COPY pyproject.toml poetry.lock* /app/
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Install Poetry
-RUN pip install poetry
+# Copy the pyproject.toml and uv.lock files to the container
+COPY pyproject.toml uv.lock /app/
 
 # Install dependencies
-RUN poetry config virtualenvs.create false && poetry install --no-dev
+RUN uv sync --frozen --no-dev
 
 # Copy the rest of the application code to the container
 COPY . /app
@@ -20,4 +20,4 @@ COPY . /app
 EXPOSE 8000
 
 # Command to run the application
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

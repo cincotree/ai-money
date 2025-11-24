@@ -14,10 +14,9 @@ The app converts uploaded credit card statements (CSV or PDF) into a beancount f
 ### Setup
 
 #### Backend
-- Install the python version specified in pyproject.toml
+- Install [uv](https://docs.astral.sh/uv/) package manager
 - cd backend
-- pip install poetry
-- poetry install
+- uv sync
 
 #### Frontend
 This is a [Next.js](https://nextjs.org) app bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
@@ -37,13 +36,12 @@ Install
 1. Install dependencies:
 ```bash
 cd backend
-poetry shell
-poetry install
+uv sync
 ```
 
 2. Run the server:
 ```bash
-ANTHROPIC_API_KEY=<your_key> poetry run uvicorn app:app --reload
+ANTHROPIC_API_KEY=<your_key> uv run uvicorn app:app --reload
 ```
 
 ## Build and run the application using Docker:
