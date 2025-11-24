@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated, Literal
-from langgraph.graph import StateGraph, Graph
-from langgraph.graph.state import CompiledGraph
+from langgraph.graph import StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from agents.base import AgentState, Step
 from agents.categorizer import CategorizationAgent
 from agents.orchestrator import OrchestratorAgent
@@ -19,7 +19,7 @@ async def router(state: AgentState) -> str | None:
     return state.next_step.value
 
 
-def create_workflow() -> CompiledGraph:
+def create_workflow() -> CompiledStateGraph:
     workflow = StateGraph(AgentState)
 
     workflow.add_node(Step.ORCHESTRATE.value, OrchestratorAgent().orchestrate)
