@@ -13,6 +13,20 @@ The app converts uploaded credit card statements (CSV or PDF) into a beancount f
 
 ### Setup
 
+#### PostgreSQL Database
+The application requires PostgreSQL to be installed and running. Set up the database:
+
+1. Install PostgreSQL (if not already installed):
+   - macOS: `brew install postgresql`
+   - Ubuntu: `sudo apt-get install postgresql`
+
+2. Create the postgres role (if it doesn't exist):
+```bash
+psql postgres -c "CREATE ROLE postgres WITH LOGIN PASSWORD 'postgres' SUPERUSER CREATEDB CREATEROLE;"
+```
+
+3. The application will automatically create the `aimoney` database when it runs.
+
 #### Backend
 - Install [uv](https://docs.astral.sh/uv/) package manager
 - cd backend
@@ -113,4 +127,4 @@ Simply upload your credit card statement (CSV or PDF) through the web interface,
 
 ### Dashboard
 
-[Paisa](https://paisa.fyi/) is a dashboard tool to visualize the transactions. To visualiase the transactions you can use that.
+[Paisa](https://paisa.fyi/) is a dashboard tool to visualize the transactions. To visualize the transactions you can use that.

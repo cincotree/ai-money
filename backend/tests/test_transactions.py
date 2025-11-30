@@ -1,3 +1,4 @@
+import uuid
 from datetime import date
 from decimal import Decimal
 
@@ -180,7 +181,7 @@ class TestTransactionRetrieval:
     async def test_get_nonexistent_transaction(
         self, transaction_repo: TransactionRepository
     ):
-        transaction = await transaction_repo.get_by_id("nonexistent-id")
+        transaction = await transaction_repo.get_by_id(str(uuid.uuid4()))
         assert transaction is None
 
 

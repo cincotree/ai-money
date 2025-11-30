@@ -1,3 +1,4 @@
+import uuid
 from datetime import date
 
 import pytest
@@ -92,7 +93,7 @@ class TestAccountRetrieval:
         assert account.name == "Assets:Bank:Checking"
 
     async def test_get_nonexistent_account(self, account_repo: AccountRepository):
-        account = await account_repo.get_by_id("nonexistent-id")
+        account = await account_repo.get_by_id(str(uuid.uuid4()))
         assert account is None
 
         account = await account_repo.get_by_name("Nonexistent:Account")
@@ -187,5 +188,5 @@ class TestAccountOperations:
         assert retrieved is None
 
     async def test_delete_nonexistent_account(self, account_repo: AccountRepository):
-        deleted = await account_repo.delete("nonexistent-id")
+        deleted = await account_repo.delete(str(uuid.uuid4()))
         assert deleted is False
