@@ -16,6 +16,13 @@ export default function Navigation() {
         >
           🤖 AI Money
         </Link>
+        <Link
+          href="/networth"
+          className={`text-xl font-bold ${pathname === "/networth" ? "text-white" : "text-gray-400 hover:text-white"
+            }`}
+        >
+          💰 Net Worth
+        </Link>
       </div>
     </nav>
   );

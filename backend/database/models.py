@@ -244,6 +244,48 @@ class Balance(Base):
         return f"<Balance(account={self.account_id}, date={self.date}, amount={self.amount})>"
 
 
+class ExchangeRate(Base):
+    """
+    Exchange rate between two currencies on a specific date.
+
+    Stores historical exchange rates for currency conversions.
+    Format: 1 from_currency = rate * to_currency
+    """
+    __tablename__ = "exchange_rates"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
+    # Date this rate is effective
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    # Source currency (e.g., "USD")
+    from_currency: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    # Target currency (e.g., "INR")
+    to_currency: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    # Exchange rate (1 from_currency = rate * to_currency)
+    rate: Mapped[Decimal] = mapped_column(
+        Numeric(precision=20, scale=6), nullable=False
+    )
+    # Optional source/notes (e.g., "manual", "API", "xe.com")
+    source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("date", "from_currency", "to_currency",
+                        name="uq_exchange_rate_date_currencies"),
+        Index("ix_exchange_rates_currencies", "from_currency", "to_currency"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ExchangeRate({self.from_currency}/{self.to_currency}={self.rate} on {self.date})>"
+
+
 class TransactionLink(Base):
     """
     Link identifier for a transaction (Beancount ^link syntax).

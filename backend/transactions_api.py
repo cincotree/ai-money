@@ -7,7 +7,6 @@ from accounting.catagory import CATEGORIES
 from accounting.cc import convert_fidelity_cc_to_beancount
 from accounting.accounts import account_directives
 from accounting.transactions import build_transaction_dicts
-from accounting.pdf_parser import parse_pdf_statement_with_ai, convert_ai_transactions_to_csv_format
 from datetime import datetime
 import pandas as pd
 from fastapi import UploadFile
@@ -45,16 +44,11 @@ async def upload_file(file: UploadFile):
             f.write(content)
 
         # Process based on file type
-        currency = "USD"  # Default currency
+        currency = "USD"
         if file_extension == '.pdf':
-            # Parse PDF using AI
-            ai_transactions, currency = parse_pdf_statement_with_ai(filename)
-            csv_format_txns = convert_ai_transactions_to_csv_format(ai_transactions)
-            sample_txns = pd.DataFrame(csv_format_txns)
+            raise HTTPException(status_code=400, detail="PDF upload not currently supported")
         else:
-            # Read CSV directly
             sample_txns = pd.read_csv(filename)
-            # For CSV, default to USD (could be enhanced to detect from CSV content)
 
         # Convert to beancount format
         beancount_txns = convert_fidelity_cc_to_beancount(sample_txns)

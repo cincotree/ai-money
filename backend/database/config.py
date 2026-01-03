@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     postgres_password: str = "postgres"
     postgres_host: str = "localhost"
     postgres_port: int = 5432
-    postgres_db: str = "aimoney"
+    postgres_db: str = "ai_money_development"
 
     # Connection pool settings
     pool_size: int = 5
