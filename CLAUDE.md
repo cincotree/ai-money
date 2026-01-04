@@ -69,6 +69,10 @@ docker run -p 8000:8000 -e ANTHROPIC_API_KEY=your_key ai-money/backend
 ```bash
 cd frontend
 npm install
+
+# Create .env.local from sample
+cp .env.local.sample .env.local
+# Edit .env.local and set BACKEND_HOST if needed (defaults to localhost:8000)
 ```
 
 ### Frontend Development
@@ -99,7 +103,7 @@ docker run -p 3000:3000 -e BACKEND_HOST=localhost:8000 ai-money/frontend
 
 ## Environment Variables
 - **Backend**: `ANTHROPIC_API_KEY` - Required for Claude AI categorization
-- **Frontend**: `BACKEND_HOST` - Backend API host (default: localhost:8000 for Docker)
+- **Frontend**: `BACKEND_HOST` - Required. Backend API host (e.g., localhost:8000 for local dev). Must be set in `.env.local`
 
 ## Beancount Integration
 - Transaction format uses beancount double-entry accounting

@@ -40,6 +40,8 @@ Install
 - npm (comes with Node.js)
 - cd frontend
 - npm install
+- cp .env.local.sample .env.local
+- Edit `.env.local` and set `BACKEND_HOST` (defaults to `localhost:8000` for local development)
 
 ### Run
 

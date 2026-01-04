@@ -15,6 +15,8 @@ from sqlalchemy.orm import selectinload
 from database.models import (
     Account,
     AccountType,
+    Balance,
+    ExchangeRate,
     Transaction,
     Posting,
     TransactionLink,
@@ -563,3 +565,178 @@ class TransactionRepository:
             )
         )
         return result.scalar() or Decimal(0)
+
+
+class BalanceRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def create_or_update(
+        self,
+        account_id: str,
+        date: date,
+        amount: Decimal,
+        currency: str,
+    ) -> Balance:
+        existing = await self.session.execute(
+            select(Balance).where(
+                and_(
+                    Balance.account_id == account_id,
+                    Balance.date == date,
+                    Balance.currency == currency,
+                )
+            )
+        )
+        balance = existing.scalar_one_or_none()
+
+        if balance:
+            balance.amount = amount
+        else:
+            balance = Balance(
+                account_id=account_id,
+                date=date,
+                amount=amount,
+                currency=currency,
+                is_verified=True,
+            )
+            self.session.add(balance)
+
+        await self.session.flush()
+        return balance
+
+    async def get_latest_balances(
+        self, as_of_date: date | None = None
+    ) -> list[Balance]:
+        if as_of_date is None:
+            as_of_date = date.today()
+
+        subquery = (
+            select(
+                Balance.account_id,
+                Balance.currency,
+                func.max(Balance.date).label("max_date"),
+            )
+            .where(Balance.date <= as_of_date)
+            .group_by(Balance.account_id, Balance.currency)
+            .subquery()
+        )
+
+        result = await self.session.execute(
+            select(Balance)
+            .join(
+                subquery,
+                and_(
+                    Balance.account_id == subquery.c.account_id,
+                    Balance.currency == subquery.c.currency,
+                    Balance.date == subquery.c.max_date,
+                ),
+            )
+            .options(selectinload(Balance.account))
+        )
+        return list(result.scalars().all())
+
+    async def delete(self, balance_id: str) -> bool:
+        result = await self.session.execute(
+            select(Balance).where(Balance.id == balance_id)
+        )
+        balance = result.scalar_one_or_none()
+        if balance:
+            await self.session.delete(balance)
+            await self.session.flush()
+            return True
+        return False
+
+
+class ExchangeRateRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def create_or_update(
+        self,
+        date: date,
+        from_currency: str,
+        to_currency: str,
+        rate: Decimal,
+        source: str | None = None,
+    ) -> ExchangeRate:
+        existing = await self.session.execute(
+            select(ExchangeRate).where(
+                and_(
+                    ExchangeRate.date == date,
+                    ExchangeRate.from_currency == from_currency,
+                    ExchangeRate.to_currency == to_currency,
+                )
+            )
+        )
+        exchange_rate = existing.scalar_one_or_none()
+
+        if exchange_rate:
+            exchange_rate.rate = rate
+            if source:
+                exchange_rate.source = source
+        else:
+            exchange_rate = ExchangeRate(
+                date=date,
+                from_currency=from_currency,
+                to_currency=to_currency,
+                rate=rate,
+                source=source,
+            )
+            self.session.add(exchange_rate)
+
+        await self.session.flush()
+        return exchange_rate
+
+    async def get_rate(
+        self,
+        from_currency: str,
+        to_currency: str,
+        as_of_date: date | None = None,
+    ) -> Decimal | None:
+        if as_of_date is None:
+            as_of_date = date.today()
+
+        result = await self.session.execute(
+            select(ExchangeRate)
+            .where(
+                and_(
+                    ExchangeRate.from_currency == from_currency,
+                    ExchangeRate.to_currency == to_currency,
+                    ExchangeRate.date <= as_of_date,
+                )
+            )
+            .order_by(ExchangeRate.date.desc())
+            .limit(1)
+        )
+        rate_obj = result.scalar_one_or_none()
+        return rate_obj.rate if rate_obj else None
+
+    async def list_all(
+        self,
+        from_currency: str | None = None,
+        to_currency: str | None = None,
+    ) -> list[ExchangeRate]:
+        query = select(ExchangeRate).order_by(
+            ExchangeRate.date.desc(),
+            ExchangeRate.from_currency,
+            ExchangeRate.to_currency,
+        )
+
+        if from_currency:
+            query = query.where(ExchangeRate.from_currency == from_currency)
+        if to_currency:
+            query = query.where(ExchangeRate.to_currency == to_currency)
+
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def delete(self, exchange_rate_id: str) -> bool:
+        result = await self.session.execute(
+            select(ExchangeRate).where(ExchangeRate.id == exchange_rate_id)
+        )
+        rate = result.scalar_one_or_none()
+        if rate:
+            await self.session.delete(rate)
+            await self.session.flush()
+            return True
+        return False

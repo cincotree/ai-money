@@ -12,13 +12,15 @@ async function getBaseUrl(): Promise<string> {
     try {
         const response = await fetch("/health");
         const data = await response.json();
-        window.backend_host = data.backend_host;
-        return data.backend_host;
+        if (data.backend_host) {
+            window.backend_host = data.backend_host;
+            return data.backend_host;
+        }
     } catch (error) {
         console.error("Failed to fetch backend host:", error);
     }
 
-    return "localhost:8000";
+    throw new Error("BACKEND_HOST environment variable is not configured. Please set it in your .env.local file.");
 }
 
 export async function getBaseHttpUrl(): Promise<string> {
