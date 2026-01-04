@@ -13,10 +13,10 @@ router = APIRouter(prefix="/networth", tags=["networth"])
 
 
 class AccountCreate(BaseModel):
-    name: str = Field(..., description="Full account name (e.g., 'Assets:Bank:Savings')")
-    currency: str = Field(default="USD", description="Account currency")
-    description: Optional[str] = Field(None, description="Account description/notes")
-    open_date: date_type = Field(default_factory=date_type.today, description="Account opening date")
+    name: str
+    currency: str = "USD"
+    description: Optional[str] = None
+    open_date: date_type = Field(default_factory=date_type.today)
 
 
 class AccountResponse(BaseModel):

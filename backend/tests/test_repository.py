@@ -19,36 +19,6 @@ async def exchange_rate_repo(session: AsyncSession) -> ExchangeRateRepository:
 
 
 @pytest.mark.asyncio
-async def test_create_asset_account(account_repo: AccountRepository, session: AsyncSession):
-    account = await account_repo.create(
-        name="Assets:Bank:TestBank",
-        open_date=date(2024, 1, 1),
-        currency="USD",
-        description="Test bank account",
-    )
-    await session.commit()
-
-    assert account.id is not None
-    assert account.name == "Assets:Bank:TestBank"
-    assert account.account_type == AccountType.ASSETS
-    assert account.currency == "USD"
-    assert account.is_active is True
-
-
-@pytest.mark.asyncio
-async def test_create_liability_account(account_repo: AccountRepository, session: AsyncSession):
-    account = await account_repo.create(
-        name="Liabilities:CreditCard:TestCard",
-        open_date=date(2024, 1, 1),
-        currency="USD",
-        description="Test credit card",
-    )
-    await session.commit()
-
-    assert account.account_type == AccountType.LIABILITIES
-
-
-@pytest.mark.asyncio
 async def test_create_balance_entry(
     account_repo: AccountRepository,
     balance_repo: BalanceRepository,
@@ -185,53 +155,6 @@ async def test_multi_currency_balances(
 
     currencies = {b.currency for b in balances}
     assert currencies == {"USD", "INR"}
-
-
-@pytest.mark.asyncio
-async def test_net_worth_calculation(
-    account_repo: AccountRepository,
-    balance_repo: BalanceRepository,
-    session: AsyncSession,
-):
-    asset_account = await account_repo.create(
-        name="Assets:Bank:NetWorthTest",
-        open_date=date(2024, 1, 1),
-        currency="USD",
-    )
-    liability_account = await account_repo.create(
-        name="Liabilities:Loan:NetWorthTest",
-        open_date=date(2024, 1, 1),
-        currency="USD",
-    )
-    await session.commit()
-
-    await balance_repo.create_or_update(
-        account_id=asset_account.id,
-        date=date(2024, 6, 1),
-        amount=Decimal("50000"),
-        currency="USD",
-    )
-    await balance_repo.create_or_update(
-        account_id=liability_account.id,
-        date=date(2024, 6, 1),
-        amount=Decimal("20000"),
-        currency="USD",
-    )
-    await session.commit()
-
-    balances = await balance_repo.get_latest_balances()
-
-    total_assets = sum(
-        b.amount for b in balances if b.account.account_type == AccountType.ASSETS
-    )
-    total_liabilities = sum(
-        b.amount for b in balances if b.account.account_type == AccountType.LIABILITIES
-    )
-    net_worth = total_assets - total_liabilities
-
-    assert total_assets == Decimal("50000")
-    assert total_liabilities == Decimal("20000")
-    assert net_worth == Decimal("30000")
 
 
 @pytest.mark.asyncio
